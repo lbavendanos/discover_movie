@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
+import 'package:discover_movie/api/movies_api.dart';
+import 'package:discover_movie/models/movie.dart';
+import 'package:discover_movie/models/response.dart';
+import 'package:discover_movie/widgets/card_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   final String title = 'Discover Movie Home Page';
@@ -26,7 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Container(
                     alignment: Alignment.centerLeft,
-                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    margin:
+                        EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
                     child: Text(
                       'What\'s Popular',
                       style: TextStyle(
@@ -35,27 +40,43 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Container(
                     width: double.infinity,
-                    height: 200.0,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      separatorBuilder: (context, index) {
-                        return SizedBox(width: 5.0);
-                      },
-                      itemCount: 6,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          width: 160.0,
-                          child: Card(
-                            clipBehavior: Clip.antiAlias,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: Image.network(
-                              'https://www.themoviedb.org/t/p/w220_and_h330_face/dWSnsAGTfc8U27bWsy2RfwZs0Bs.jpg',
-                              fit: BoxFit.fill,
-                            ),
-                          ),
-                        );
+                    height: 305.0,
+                    child: FutureBuilder<Response<Movie>>(
+                      future: fetchPopularMovies(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          Response<Movie> response = snapshot.data;
+                          List<Movie> movies = response.results;
+                          int count = response.results.length;
+
+                          return ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            separatorBuilder: (context, index) {
+                              return SizedBox(width: 5.0);
+                            },
+                            itemCount: count,
+                            itemBuilder: (context, index) {
+                              Movie movie = movies[index];
+                              String title = movie.title.length > 12
+                                  ? movie.title.substring(0, 12)
+                                  : movie.title;
+                              String subTitle = new DateFormat.yMMMMd('en_US')
+                                  .format(movie.releaseDate);
+                              String image =
+                                  'https://www.themoviedb.org/t/p/w220_and_h330_face/${movie.posterPath}';
+
+                              return CardWidget(
+                                image: image,
+                                title: title,
+                                subTitle: subTitle,
+                              );
+                            },
+                          );
+                        } else if (snapshot.hasError) {
+                          return Text("${snapshot.error}");
+                        }
+
+                        return CircularProgressIndicator();
                       },
                     ),
                   ),
